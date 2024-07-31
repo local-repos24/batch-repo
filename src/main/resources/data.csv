@@ -1,0 +1,4 @@
+id,code,name,active,payload
+1,100202,hammer,false,{price:22}
+2,1776727,toilet,true,{price:99}
+3,23456,door,false,{price:1234}
