@@ -1,6 +1,7 @@
 package com.example.filereader.config;
 
 import com.example.filereader.data.ProductCSV;
+import com.example.filereader.listener.JobCompletionListener;
 import com.example.filereader.model.Product;
 import com.example.filereader.processor.FileItemProcessor;
 import com.example.filereader.reader.FileItemReader;
@@ -29,20 +30,26 @@ public class MainJob {
     FileItemWriter fileItemWriter;
 
     @Bean
-    public Job productCsvJob(JobRepository jobRepository, Step productCsvStep){
+    public Job productCsvJob(JobRepository jobRepository,
+                            JobCompletionListener listener,
+                             Step productCsvStep){
         return new JobBuilder("productCsvJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
+                .listener(listener)
                 .start(productCsvStep)
                 .build();
     }
 
     @Bean
-    public Step productCsvStep(JobRepository jobRepository, PlatformTransactionManager transactionManager){
+    public Step productCsvStep(JobRepository jobRepository,
+                               JobCompletionListener listener,
+                               PlatformTransactionManager transactionManager){
         return new StepBuilder("productCsvStep", jobRepository)
                 .<ProductCSV, Product>chunk(10, transactionManager)
                 .reader(fileItemReader)
                 .processor(fileItemProcessor)
                 .writer(fileItemWriter)
+                .listener(listener)
                 .build();
     }
 
