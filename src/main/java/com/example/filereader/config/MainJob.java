@@ -5,20 +5,27 @@ import com.example.filereader.listener.JobCompletionListener;
 import com.example.filereader.model.Product;
 import com.example.filereader.processor.FileItemProcessor;
 import com.example.filereader.reader.FileItemReader;
+import com.example.filereader.tasklet.HelloWorldTasklet;
 import com.example.filereader.writer.FileItemWriter;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.*;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
+@EnableBatchProcessing
 public class MainJob {
+
+    @Autowired
+    private JobLauncher jobLauncher;
 
     @Autowired
     FileItemReader fileItemReader;
@@ -53,7 +60,6 @@ public class MainJob {
                 .build();
     }
 
-    /*
     @Bean
     public Job helloWorldJob(JobRepository jobRepository, Step helloWorldStep) {
         return new JobBuilder("helloWorldJob", jobRepository)
@@ -66,5 +72,25 @@ public class MainJob {
         return new StepBuilder("helloWorldStep", jobRepository)
                 .tasklet(new HelloWorldTasklet(), transactionManager)
                 .build();
-    }*/
+    }
+
+
+    /*
+    * Maybe we dont need this because it runs automatically 2 jobs at the same time
+    *
+    * */
+    @Bean
+    public CommandLineRunner runJobs(Job productCsvJob, Job helloWorldJob) {
+        return args -> {
+            JobParameters jobParameters = new JobParametersBuilder()
+                    .addLong("startAt", System.currentTimeMillis())
+                    .toJobParameters();
+
+            JobExecution helloWorldJobExecution = jobLauncher.run(helloWorldJob, jobParameters);
+            System.out.println("HelloWorld Job Status: " + helloWorldJobExecution.getStatus());
+
+            JobExecution productCsvJobExecution = jobLauncher.run(productCsvJob, jobParameters);
+            System.out.println("Product CSV Job Status: " + productCsvJobExecution.getStatus());
+        };
+    }
 }
